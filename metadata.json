@@ -1,0 +1,8 @@
+{
+  "name": "04JAN26-Prod_Vrs_Mazora Auctions",
+  "description": "A multilingual daily auction marketplace for consumer and light industrial goods, featuring AI moderation and real-time bidding.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

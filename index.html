@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#1E3A8A" />
+    <meta name="description" content="Mazora: The #1 Daily Auction Marketplace. Buy and sell electronics, vehicles, and home goods securely." />
+    
+    <!-- OPEN GRAPH META TAGS -->
+    <meta property="og:title" content="Mazora | Daily Auctions & Marketplace" />
+    <meta property="og:description" content="Turkey's first AI-powered daily auction platform. Secure escrow payments, verified sellers, and real-time bidding." />
+    <meta property="og:image" content="https://ui-avatars.com/api/?name=Mazora&background=1E3A8A&color=fff&size=512" />
+    <meta property="og:url" content="https://mazora.com" />
+    <meta property="og:type" content="website" />
+    
+    <title>Mazora | #1 Daily Auction Marketplace</title>
+    
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- PERFORMANCE: Preconnect to CDNs -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Nunito', 'sans-serif'],
+              display: ['Montserrat', 'sans-serif'],
+            },
+            colors: {
+              primary: {
+                DEFAULT: '#1E3A8A',
+                50: '#eff6ff',
+                100: '#dbeafe',
+                500: '#3b82f6',
+                600: '#2563eb',
+                700: '#1d4ed8',
+                800: '#1e40af',
+                900: '#1E3A8A',
+              },
+              secondary: {
+                DEFAULT: '#F97316',
+                50: '#fff7ed',
+                100: '#ffedd5',
+                500: '#f97316',
+                600: '#ea580c',
+              },
+              accent: {
+                DEFAULT: '#059669',
+                50: '#ecfdf5',
+                100: '#d1fae5',
+                600: '#059669',
+              },
+              neutral: {
+                bg: '#F3F4F6',
+              }
+            },
+            keyframes: {
+              fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+              fadeInDown: { '0%': { opacity: '0', transform: 'translateY(-20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+              slideUp: { '0%': { transform: 'translateY(100%)' }, '100%': { transform: 'translateY(0)' } },
+              mediaProgress: { '0%': { width: '0%' }, '100%': { width: '100%' } }
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.3s ease-out',
+              'fade-in-down': 'fadeInDown 0.4s ease-out',
+              'slide-up': 'slideUp 0.3s ease-out',
+              'media-progress': 'mediaProgress 1.5s linear forwards',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body { background-color: #F3F4F6; -webkit-tap-highlight-color: transparent; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0",
+    "express": "https://esm.sh/express@^5.2.1",
+    "path": "https://esm.sh/path@^0.12.7",
+    "url": "https://esm.sh/url@^0.11.4",
+    "fs": "https://esm.sh/fs@^0.0.1-security"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
