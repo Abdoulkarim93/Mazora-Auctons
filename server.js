@@ -17,7 +17,7 @@ console.log(`Current Directory: ${__dirname}`);
 console.log(`Looking for dist at: ${distPath}`);
 
 if (!fs.existsSync(distPath)) {
-    console.warn('WARNING: "dist" folder not found! Please ensure "npm run build" was executed successfully.');
+    console.warn('WARNING: "dist" folder not found! Please run "npm run build" to generate static assets.');
 }
 
 // Serve static files from dist
@@ -42,7 +42,7 @@ app.get('*', (req, res) => {
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
-    res.status(404).send('Frontend application files (dist/index.html) not found. Build may have failed.');
+    res.status(404).send('Frontend application files (dist/index.html) not found. Please run "npm run build" first.');
   }
 });
 

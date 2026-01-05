@@ -56,7 +56,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-// Optimized Lazy Loading
+// Optimized Lazy Loading with explicit relative paths
 const Home = lazy(() => import('./pages/Home').then(module => ({ default: module.Home })));
 const SellItem = lazy(() => import('./pages/SellItem').then(module => ({ default: module.SellItem })));
 const AuctionDetail = lazy(() => import('./pages/AuctionDetail').then(module => ({ default: module.AuctionDetail })));
