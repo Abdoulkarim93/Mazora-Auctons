@@ -296,7 +296,7 @@ export const Profile = () => {
                                         <div className="flex-1 min-w-0 flex flex-col justify-center"><span className="bg-emerald-100 text-emerald-700 text-[8px] font-black px-2 py-0.5 rounded uppercase mb-2 inline-block self-start">İŞLEM BAŞLADI ✅</span><h4 className="font-display font-black text-lg md:text-2xl text-gray-900 uppercase italic truncate mb-2 leading-tight tracking-tighter">{(user.role as string) === 'seller' ? item.title : item.auctionTitle}</h4><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{new Date(item.timestamp || item.createdAt).toLocaleDateString()}</p></div>
                                     </div>
                                     <div className="space-y-6">
-                                        {/* Fixed role type mismatch with explicit casting */}
+                                        {/* Cast user role to satisfy component types */}
                                         <TrustStepper item={item} role={user.role as 'buyer' | 'seller'} />
                                         <FeeBreakdown baseAmount={(user.role as string) === 'seller' ? (item.reservePrice || item.startPrice) : item.myBid} condition={item.condition} role={user.role as 'buyer' | 'seller'} isBoosted={item.isBoosted} />
                                     </div>

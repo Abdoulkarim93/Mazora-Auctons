@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Nixpacks builds into the 'dist' folder by default
+// Nixpacks builds into 'dist' folder
 const distPath = path.resolve(__dirname, 'dist');
 
 console.log('--- MAZORA STARTUP ---');
@@ -17,7 +17,7 @@ console.log(`Current Directory: ${__dirname}`);
 console.log(`Looking for dist at: ${distPath}`);
 
 if (!fs.existsSync(distPath)) {
-    console.warn('WARNING: "dist" folder not found! Please run "npm run build" to generate static assets.');
+    console.warn('WARNING: "dist" folder not found! Build may have failed or files are misplaced.');
 }
 
 // Serve static files from dist
@@ -42,7 +42,7 @@ app.get('*', (req, res) => {
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
-    res.status(404).send('Frontend application files (dist/index.html) not found. Please run "npm run build" first.');
+    res.status(404).send('Frontend application files (dist/index.html) not found. Verify build success.');
   }
 });
 
