@@ -56,35 +56,35 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-// Optimized Lazy Loading
-const Home = lazy(() => import('./pages/Home').then(module => ({ default: module.Home })));
-const SellItem = lazy(() => import('./pages/SellItem').then(module => ({ default: module.SellItem })));
-const AuctionDetail = lazy(() => import('./pages/AuctionDetail').then(module => ({ default: module.AuctionDetail })));
-const Categories = lazy(() => import('./pages/Categories').then(module => ({ default: module.Categories })));
-const BuyerRequests = lazy(() => import('./pages/BuyerRequests').then(module => ({ default: module.BuyerRequests })));
-const CreateRequest = lazy(() => import('./pages/CreateRequest').then(module => ({ default: module.CreateRequest })));
-const MyRequests = lazy(() => import('./pages/MyRequests').then(module => ({ default: module.MyRequests })));
-const Login = lazy(() => import('./pages/Login').then(module => ({ default: module.Login })));
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(module => ({ default: module.ForgotPassword })));
-const Register = lazy(() => import('./pages/Register').then(module => ({ default: module.Register })));
-const Profile = lazy(() => import('./pages/Profile').then(module => ({ default: module.Profile })));
-const AdminLogin = lazy(() => import('./pages/AdminLogin').then(module => ({ default: module.AdminLogin })));
-const AdminPanel = lazy(() => import('./pages/AdminPanel').then(module => ({ default: module.AdminPanel })));
-const NotFound = lazy(() => import('./pages/NotFound').then(module => ({ default: module.NotFound })));
-const QuickListSuccess = lazy(() => import('./pages/QuickListSuccess').then(module => ({ default: module.QuickListSuccess })));
-const UserFeedback = lazy(() => import('./pages/UserFeedback').then(module => ({ default: module.UserFeedback })));
-const VerifiedSellers = lazy(() => import('./pages/VerifiedSellers').then(module => ({ default: module.VerifiedSellers })));
+// Optimized Lazy Loading using root paths
+const Home = lazy(() => import('./pages/Home.tsx').then(module => ({ default: module.Home })));
+const SellItem = lazy(() => import('./pages/SellItem.tsx').then(module => ({ default: module.SellItem })));
+const AuctionDetail = lazy(() => import('./pages/AuctionDetail.tsx').then(module => ({ default: module.AuctionDetail })));
+const Categories = lazy(() => import('./pages/Categories.tsx').then(module => ({ default: module.Categories })));
+const BuyerRequests = lazy(() => import('./pages/BuyerRequests.tsx').then(module => ({ default: module.BuyerRequests })));
+const CreateRequest = lazy(() => import('./pages/CreateRequest.tsx').then(module => ({ default: module.CreateRequest })));
+const MyRequests = lazy(() => import('./pages/MyRequests.tsx').then(module => ({ default: module.MyRequests })));
+const Login = lazy(() => import('./pages/Login.tsx').then(module => ({ default: module.Login })));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword.tsx').then(module => ({ default: module.ForgotPassword })));
+const Register = lazy(() => import('./pages/Register.tsx').then(module => ({ default: module.Register })));
+const Profile = lazy(() => import('./pages/Profile.tsx').then(module => ({ default: module.Profile })));
+const AdminLogin = lazy(() => import('./pages/AdminLogin.tsx').then(module => ({ default: module.AdminLogin })));
+const AdminPanel = lazy(() => import('./pages/AdminPanel.tsx').then(module => ({ default: module.AdminPanel })));
+const NotFound = lazy(() => import('./pages/NotFound.tsx').then(module => ({ default: module.NotFound })));
+const QuickListSuccess = lazy(() => import('./pages/QuickListSuccess.tsx').then(module => ({ default: module.QuickListSuccess })));
+const UserFeedback = lazy(() => import('./pages/UserFeedback.tsx').then(module => ({ default: module.UserFeedback })));
+const VerifiedSellers = lazy(() => import('./pages/VerifiedSellers.tsx').then(module => ({ default: module.VerifiedSellers })));
 
 // Legal pages
-const HelpCenter = lazy(() => import('./pages/Legal').then(module => ({ default: module.HelpCenter })));
-const EscrowPolicy = lazy(() => import('./pages/Legal').then(module => ({ default: module.EscrowPolicy })));
-const AuctionRules = lazy(() => import('./pages/Legal').then(module => ({ default: module.AuctionRules })));
-const EthicsPolicy = lazy(() => import('./pages/Legal').then(module => ({ default: module.EthicsPolicy })));
-const PrivacyPolicy = lazy(() => import('./pages/Legal').then(module => ({ default: module.PrivacyPolicy })));
-const TermsOfService = lazy(() => import('./pages/Legal').then(module => ({ default: module.TermsOfService })));
-const MembershipContract = lazy(() => import('./pages/Legal').then(module => ({ default: module.MembershipContract })));
-const FAQ = lazy(() => import('./pages/FAQ').then(module => ({ default: module.FAQ })));
-const AboutUs = lazy(() => import('./pages/AboutUs').then(module => ({ default: module.AboutUs })));
+const HelpCenter = lazy(() => import('./pages/Legal.tsx').then(module => ({ default: module.HelpCenter })));
+const EscrowPolicy = lazy(() => import('./pages/Legal.tsx').then(module => ({ default: module.EscrowPolicy })));
+const AuctionRules = lazy(() => import('./pages/Legal.tsx').then(module => ({ default: module.AuctionRules })));
+const EthicsPolicy = lazy(() => import('./pages/Legal.tsx').then(module => ({ default: module.EthicsPolicy })));
+const PrivacyPolicy = lazy(() => import('./pages/Legal.tsx').then(module => ({ default: module.PrivacyPolicy })));
+const TermsOfService = lazy(() => import('./pages/Legal.tsx').then(module => ({ default: module.TermsOfService })));
+const MembershipContract = lazy(() => import('./pages/Legal.tsx').then(module => ({ default: module.MembershipContract })));
+const FAQ = lazy(() => import('./pages/FAQ.tsx').then(module => ({ default: module.FAQ })));
+const AboutUs = lazy(() => import('./pages/AboutUs.tsx').then(module => ({ default: module.AboutUs })));
 
 const App = () => {
   return (
