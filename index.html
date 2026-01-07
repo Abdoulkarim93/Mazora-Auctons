@@ -27,8 +27,7 @@
     <script>
       /**
        * CRITICAL: Global polyfill for process.
-       * Many production builds of React dependencies check this object.
-       * It must be defined before any ESM modules are loaded.
+       * Must be defined synchronously before any modules are loaded.
        */
       window.process = { 
         env: { 
@@ -107,7 +106,9 @@
     "express": "https://esm.sh/express@^5.2.1",
     "path": "https://esm.sh/path@^0.12.7",
     "url": "https://esm.sh/url@^0.11.4",
-    "fs": "https://esm.sh/fs@^0.0.1-security"
+    "fs": "https://esm.sh/fs@^0.0.1-security",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1",
+    "jspdf": "https://esm.sh/jspdf@^4.0.0"
   }
 }
 </script>

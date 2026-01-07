@@ -5,6 +5,8 @@ import { User, CategoryType, ProductCondition, AuctionStatus, CATEGORIES, Invent
 import { LazyImage } from '../components/LazyImage';
 import { Logo } from '../components/Logo';
 import { verifyHumanFace } from '../services/geminiService';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 type AdminTab = 'overview' | 'users' | 'deals' | 'listings' | 'logs' | 'finance';
 
@@ -230,7 +232,6 @@ const EditUserModal = ({ user, isOpen, onClose }: { user: User | null, isOpen: b
                 const base64Data = reader.result as string;
                 const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
                 
-                // REQUIREMENT: If account is a Store (Mağaza), skip face verification for logos
                 if (formData.isStore) {
                     setFormData(prev => ({ ...prev, avatarUrl: base64Data }));
                     showToast("Mağaza logosu hazır. 🏪", "success");
@@ -581,8 +582,6 @@ const UserCommandCenter = ({ user, isOpen, onClose }: { user: User | null, isOpe
                                 {user.sellerTier === 'onayli' ? '✓ PRO ONAYI KALDIR' : '✨ PRO ONAYI VER'}
                             </button>
 
-                            {/* PROMPT COMPLIANCE: Removed the password display block from Admin View to prevent unauthorized access */}
-                            
                             <div className="bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
                                 <p className="text-[10px] font-black text-slate-500 uppercase">Cüzdan Bakiye</p>
                                 <p className="text-base font-black text-emerald-400 truncate ml-4">{formatPrice(user.walletBalance)}</p>
@@ -697,7 +696,7 @@ const UserCommandCenter = ({ user, isOpen, onClose }: { user: User | null, isOpe
 };
 
 export const AdminPanel = () => {
-    const { user: adminUser, allUsers, auctions, formatPrice, logout, adminDeleteAuction, auditLogs, adminUpdateUser, toggleUserBlock, deleteUser, language } = useApp();
+    const { user: adminUser, allUsers, auctions, formatPrice, logout, adminDeleteAuction, auditLogs, adminUpdateUser, toggleUserBlock, deleteUser, language, showToast } = useApp();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<AdminTab>('overview');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -705,6 +704,7 @@ export const AdminPanel = () => {
     const [editAuctionTarget, setEditAuctionTarget] = useState<AuctionItem | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => { if (!adminUser || adminUser.role !== 'admin') navigate('/admin/login'); }, [adminUser, navigate]);
 
@@ -765,6 +765,37 @@ export const AdminPanel = () => {
             platformRevenue: financialData.platformRevenue
         };
     }, [allUsers, auctions, activeDealsList, financialData]);
+
+    const handleExportPDF = async () => {
+        const reportElement = document.getElementById('admin-report-area');
+        if (!reportElement) return;
+
+        setIsExporting(true);
+        showToast("PDF Raporu Oluşturuluyor...", "info");
+
+        try {
+            const canvas = await html2canvas(reportElement, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#fcfdfe'
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`Mazora-Analytics-${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast("Rapor başarıyla indirildi.", "success");
+        } catch (err) {
+            console.error(err);
+            showToast("PDF oluşturulurken hata oluştu.", "error");
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     const filteredUsers = useMemo(() => {
         if (!searchQuery) return allUsers;
@@ -842,164 +873,160 @@ export const AdminPanel = () => {
                         </h2>
                         <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest mt-2 truncate">YÖNETİCİ KONTROL VE DENETİM SİSTEMİ</p>
                     </div>
+                    {(activeTab === 'overview' || activeTab === 'finance') && (
+                        <button 
+                            onClick={handleExportPDF}
+                            disabled={isExporting}
+                            className="bg-indigo-950 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50"
+                        >
+                            {isExporting ? <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : "📥"}
+                            EKSPORT PDF RAPOR
+                        </button>
+                    )}
                 </div>
                 
-                {activeTab === 'overview' && (
-                    <div className="space-y-12 animate-fade-in">
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-8">
-                            <button onClick={() => setActiveTab('users')} className="bg-white border border-slate-100 p-4 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-sm relative overflow-hidden group hover:shadow-xl hover:border-blue-200 transition-all text-left min-w-0">
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-blue-50 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform"></div>
-                                <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10 leading-none">TOPLAM ÜYE</p>
-                                <p className="text-sm md:text-3xl font-black text-blue-600 tracking-tighter relative z-10 leading-none mt-2 truncate">{stats.totalUsers}</p>
-                            </button>
-                            <button onClick={() => setActiveTab('listings')} className="bg-white border border-slate-100 p-4 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-sm relative overflow-hidden group hover:shadow-xl hover:border-emerald-200 transition-all text-left min-w-0">
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-50 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform"></div>
-                                <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10 leading-none">AKTİF MEZAT</p>
-                                <p className="text-sm md:text-3xl font-black text-emerald-600 tracking-tighter relative z-10 leading-none mt-2 truncate">{stats.activeAuctions}</p>
-                            </button>
-                            <button onClick={() => setActiveTab('deals')} className="bg-white border border-slate-100 p-4 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-sm relative overflow-hidden group hover:shadow-xl hover:border-orange-200 transition-all text-left min-w-0">
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-orange-50 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform"></div>
-                                <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10 leading-none">AÇIK İŞLEM</p>
-                                <p className="text-sm md:text-3xl font-black text-orange-600 tracking-tighter relative z-10 leading-none mt-2 truncate">{stats.activeDeals}</p>
-                            </button>
-                            <button onClick={() => setActiveTab('finance')} className="bg-white border border-slate-100 p-4 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-sm relative overflow-hidden group hover:shadow-xl hover:border-indigo-200 transition-all text-left min-w-0">
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-50 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform"></div>
-                                <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10 leading-none">PLATFORM REVENUE</p>
-                                <p className="text-sm md:text-3xl font-black text-indigo-900 tracking-tighter relative z-10 leading-none mt-2 truncate">{formatPrice(stats.platformRevenue)}</p>
-                            </button>
-                        </div>
+                <div id="admin-report-area">
+                    {activeTab === 'overview' && (
+                        <div className="space-y-12 animate-fade-in">
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-8">
+                                <button onClick={() => setActiveTab('users')} className="bg-white border border-slate-100 p-4 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-sm relative overflow-hidden group hover:shadow-xl hover:border-blue-200 transition-all text-left min-w-0">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-blue-50 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform"></div>
+                                    <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10 leading-none">TOPLAM ÜYE</p>
+                                    <p className="text-sm md:text-3xl font-black text-blue-600 tracking-tighter relative z-10 leading-none mt-2 truncate">{stats.totalUsers}</p>
+                                </button>
+                                <button onClick={() => setActiveTab('listings')} className="bg-white border border-slate-100 p-4 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-sm relative overflow-hidden group hover:shadow-xl hover:border-emerald-200 transition-all text-left min-w-0">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-50 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform"></div>
+                                    <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10 leading-none">AKTİF MEZAT</p>
+                                    <p className="text-sm md:text-3xl font-black text-emerald-600 tracking-tighter relative z-10 leading-none mt-2 truncate">{stats.activeAuctions}</p>
+                                </button>
+                                <button onClick={() => setActiveTab('deals')} className="bg-white border border-slate-100 p-4 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-sm relative overflow-hidden group hover:shadow-xl hover:border-orange-200 transition-all text-left min-w-0">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-orange-50 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform"></div>
+                                    <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10 leading-none">AÇIK İŞLEM</p>
+                                    <p className="text-sm md:text-3xl font-black text-orange-600 tracking-tighter relative z-10 leading-none mt-2 truncate">{stats.activeDeals}</p>
+                                </button>
+                                <button onClick={() => setActiveTab('finance')} className="bg-white border border-slate-100 p-4 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-sm relative overflow-hidden group hover:shadow-xl hover:border-indigo-200 transition-all text-left min-w-0">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-50 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform"></div>
+                                    <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10 leading-none">PLATFORM REVENUE</p>
+                                    <p className="text-sm md:text-3xl font-black text-indigo-900 tracking-tighter relative z-10 leading-none mt-2 truncate">{formatPrice(stats.platformRevenue)}</p>
+                                </button>
+                            </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                             <div className="lg:col-span-8 bg-white border border-slate-100 p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] shadow-sm">
-                                <div className="flex justify-between items-center mb-8 gap-4">
-                                    <h3 className="text-sm md:text-xl font-display font-black text-slate-900 uppercase italic truncate">SON İŞLEMLER (CANLI)</h3>
-                                    <span className="text-[8px] md:text-[9px] font-black text-emerald-500 animate-pulse uppercase whitespace-nowrap">LIVE ACTIVE</span>
-                                </div>
-                                <div className="space-y-3">
-                                    {activeDealsList.slice(0, 5).map(deal => (
-                                        <div key={deal.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg transition-all cursor-pointer gap-4 min-w-0" onClick={() => setSelectedDealAuction(deal)}>
-                                            <div className="flex items-center gap-4 min-w-0">
-                                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shrink-0 shadow-sm"><LazyImage src={deal.imageUrl} alt={deal.title} className="w-full h-full object-cover" /></div>
-                                                <div className="min-w-0">
-                                                    <h4 className="font-black text-xs text-gray-900 uppercase italic truncate">{deal.title}</h4>
-                                                    <p className="text-[8px] text-slate-400 font-bold uppercase truncate">{deal.bids.length} TEKLİF</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right shrink-0">
-                                                <p className="text-xs font-black text-indigo-900 leading-none mb-1">{formatPrice(deal.currentBid)}</p>
-                                                <span className={`text-[7px] font-black uppercase ${(deal.status === AuctionStatus.ENDED ? 'text-red-500' : 'text-emerald-500')}`}>{deal.status}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                             </div>
-                             <div className="lg:col-span-4 bg-indigo-900 p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] text-white shadow-2xl relative overflow-hidden flex flex-col justify-between">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-                                <div>
-                                    <h3 className="text-xl font-display font-black uppercase italic mb-8">ADMIN ÖZETİ</h3>
-                                    <div className="space-y-6">
-                                        <div className="cursor-pointer group min-w-0" onClick={() => setActiveTab('finance')}><p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 group-hover:text-white transition-colors">CÜZDAN TOPLAMI</p><p className="text-xl md:text-2xl font-black truncate">{formatPrice(stats.totalUserWallets)}</p></div>
-                                        <div className="cursor-pointer group min-w-0" onClick={() => setActiveTab('finance')}><p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 group-hover:text-white transition-colors">BOOST GELİRİ</p><p className="text-xl md:text-2xl font-black truncate">{formatPrice(financialData.boostFees)}</p></div>
-                                        <div className="cursor-pointer group min-w-0" onClick={() => setActiveTab('finance')}><p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 group-hover:text-white transition-colors">KOMİSYON HAVUZU</p><p className="text-xl md:text-2xl font-black truncate">{formatPrice(financialData.commissionTotal)}</p></div>
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                <div className="lg:col-span-8 bg-white border border-slate-100 p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] shadow-sm">
+                                    <div className="flex justify-between items-center mb-8 gap-4">
+                                        <h3 className="text-sm md:text-xl font-display font-black text-slate-900 uppercase italic truncate">SON İŞLEMLER (CANLI)</h3>
+                                        <span className="text-[8px] md:text-[9px] font-black text-emerald-500 animate-pulse uppercase whitespace-nowrap">LIVE ACTIVE</span>
                                     </div>
-                                </div>
-                                <button onClick={() => setActiveTab('finance')} className="mt-8 w-full py-4 bg-white text-indigo-900 rounded-2xl font-black text-[10px] uppercase shadow-xl hover:scale-105 active:scale-95 transition-all">DETAYLI ANALİZ →</button>
-                             </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'finance' && (
-                    <div className="space-y-8 animate-fade-in text-left">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                             {financialData.sources.map(source => (
-                                 <div key={source.id} className="bg-white border border-slate-100 p-6 rounded-[2rem] shadow-sm relative overflow-hidden group">
-                                     <div className={`absolute top-0 left-0 w-1 h-full ${source.color}`}></div>
-                                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{source.label}</p>
-                                     <p className="text-xl font-black text-slate-900">{formatPrice(source.amount)}</p>
-                                     <div className="mt-3 h-1 w-full bg-slate-50 rounded-full overflow-hidden">
-                                         <div 
-                                             className={`h-full ${source.color} transition-all duration-1000`} 
-                                             style={{ width: `${(source.amount / financialData.platformRevenue) * 100}%` }}
-                                         ></div>
-                                     </div>
-                                     <p className="text-[8px] text-slate-400 font-bold mt-2 uppercase tracking-tight">TOTAL %{((source.amount / financialData.platformRevenue) * 100).toFixed(1)}</p>
-                                 </div>
-                             ))}
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                            <div className="lg:col-span-7 space-y-6">
-                                <div className="bg-white border border-slate-100 p-8 rounded-[3rem] shadow-sm">
-                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-8 border-b border-slate-50 pb-4">Revenue Generation By Category</h3>
-                                    <div className="space-y-6">
-                                        {financialData.topCategories.map((cat, i) => (
-                                            <div key={cat.id} className="space-y-2">
-                                                <div className="flex justify-between items-end">
-                                                    <div>
-                                                        <span className="text-[8px] font-black text-indigo-500 uppercase tracking-widest block mb-0.5">#{i+1} RANK</span>
-                                                        <p className="text-xs font-black text-slate-900 uppercase italic truncate">{cat.label}</p>
+                                    <div className="space-y-3">
+                                        {activeDealsList.slice(0, 5).map(deal => (
+                                            <div key={deal.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg transition-all cursor-pointer gap-4 min-w-0" onClick={() => setSelectedDealAuction(deal)}>
+                                                <div className="flex items-center gap-4 min-w-0">
+                                                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shrink-0 shadow-sm"><LazyImage src={deal.imageUrl} alt={deal.title} className="w-full h-full object-cover" /></div>
+                                                    <div className="min-w-0">
+                                                        <h4 className="font-black text-xs text-gray-900 uppercase italic truncate">{deal.title}</h4>
+                                                        <p className="text-[8px] text-slate-400 font-bold uppercase truncate">{deal.bids.length} TEKLİF</p>
                                                     </div>
-                                                    <p className="text-sm font-black text-indigo-900">{formatPrice(cat.value * 0.10)} <span className="text-[8px] text-slate-400 font-bold">(COMM)</span></p>
                                                 </div>
-                                                <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="h-full bg-indigo-600 rounded-full transition-all duration-1000" 
-                                                        style={{ width: `${(cat.value / financialData.topCategories[0].value) * 100}%` }}
-                                                    ></div>
+                                                <div className="text-right shrink-0">
+                                                    <p className="text-xs font-black text-indigo-900 leading-none mb-1">{formatPrice(deal.currentBid)}</p>
+                                                    <span className={`text-[7px] font-black uppercase ${(deal.status === AuctionStatus.ENDED ? 'text-red-500' : 'text-emerald-500')}`}>{deal.status}</span>
                                                 </div>
-                                                <p className="text-[8px] font-bold text-slate-400 uppercase">Hammer Volume: {formatPrice(cat.value)}</p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
-
-                                <div className="bg-slate-900 border border-white/5 p-8 rounded-[3rem] shadow-2xl text-white relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-                                    <h3 className="text-xs font-black text-white/40 uppercase tracking-widest mb-8 flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> MONTHLY FORECAST
-                                    </h3>
-                                    <div className="h-48 flex items-end gap-2 md:gap-4 px-4">
-                                        {[45, 65, 85, 55, 75, 95, 80, 85, 90, 100].map((h, i) => (
-                                            <div key={i} className="flex-1 bg-white/10 rounded-t-xl relative group hover:bg-emerald-500/50 transition-all" style={{ height: `${h}%` }}>
-                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-indigo-900 text-[8px] font-black px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">₺{(h*120).toLocaleString()}</div>
-                                                <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 text-[6px] font-black opacity-30">M{i+1}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="lg:col-span-5 bg-white border border-slate-100 p-8 rounded-[3rem] shadow-sm flex flex-col min-w-0">
-                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6 flex justify-between items-center">
-                                    <span>Recent Inflows</span>
-                                    <span className="text-[8px] bg-slate-100 px-2 py-1 rounded text-slate-400">REALTIME</span>
-                                </h3>
-                                <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar">
-                                    {financialData.syntheticLedger.map((tx) => (
-                                        <div key={tx.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center gap-4 group hover:bg-white hover:shadow-md transition-all">
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase ${
-                                                        tx.type === 'Commission' ? 'bg-emerald-100 text-emerald-700' : 
-                                                        tx.type === 'Boost' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'
-                                                    }`}>{tx.type}</span>
-                                                    <span className="text-[8px] text-slate-400 font-bold">{tx.date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                                                </div>
-                                                <p className="text-xs font-black text-slate-800 uppercase italic truncate">{tx.desc}</p>
-                                            </div>
-                                            <div className="text-right shrink-0">
-                                                <p className="text-sm font-black text-slate-900">+{formatPrice(tx.amount)}</p>
-                                                <span className="text-[7px] font-black text-emerald-500 uppercase">RECEIVED</span>
-                                            </div>
+                                <div className="lg:col-span-4 bg-indigo-900 p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] text-white shadow-2xl relative overflow-hidden flex flex-col justify-between">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                                    <div>
+                                        <h3 className="text-xl font-display font-black uppercase italic mb-8">ADMIN ÖZETİ</h3>
+                                        <div className="space-y-6">
+                                            <div className="cursor-pointer group min-w-0" onClick={() => setActiveTab('finance')}><p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 group-hover:text-white transition-colors">CÜZDAN TOPLAMI</p><p className="text-xl md:text-2xl font-black truncate">{formatPrice(stats.totalUserWallets)}</p></div>
+                                            <div className="cursor-pointer group min-w-0" onClick={() => setActiveTab('finance')}><p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 group-hover:text-white transition-colors">BOOST GELİRİ</p><p className="text-xl md:text-2xl font-black truncate">{formatPrice(financialData.boostFees)}</p></div>
+                                            <div className="cursor-pointer group min-w-0" onClick={() => setActiveTab('finance')}><p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1 group-hover:text-white transition-colors">KOMİSYON HAVUZU</p><p className="text-xl md:text-2xl font-black truncate">{formatPrice(financialData.commissionTotal)}</p></div>
                                         </div>
-                                    ))}
+                                    </div>
+                                    <button onClick={() => setActiveTab('finance')} className="mt-8 w-full py-4 bg-white text-indigo-900 rounded-2xl font-black text-[10px] uppercase shadow-xl hover:scale-105 active:scale-95 transition-all">DETAYLI ANALİZ →</button>
                                 </div>
-                                <button className="w-full mt-6 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase shadow-xl active:scale-95 transition-all">FULL FINANCIAL REPORT 📥</button>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
+
+                    {activeTab === 'finance' && (
+                        <div className="space-y-8 animate-fade-in text-left">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {financialData.sources.map(source => (
+                                    <div key={source.id} className="bg-white border border-slate-100 p-6 rounded-[2rem] shadow-sm relative overflow-hidden group">
+                                        <div className={`absolute top-0 left-0 w-1 h-full ${source.color}`}></div>
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{source.label}</p>
+                                        <p className="text-xl font-black text-slate-900">{formatPrice(source.amount)}</p>
+                                        <div className="mt-3 h-1 w-full bg-slate-50 rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full ${source.color} transition-all duration-1000`} 
+                                                style={{ width: `${(source.amount / financialData.platformRevenue) * 100}%` }}
+                                            ></div>
+                                        </div>
+                                        <p className="text-[8px] text-slate-400 font-bold mt-2 uppercase tracking-tight">TOTAL %{((source.amount / financialData.platformRevenue) * 100).toFixed(1)}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                <div className="lg:col-span-7 space-y-6">
+                                    <div className="bg-white border border-slate-100 p-8 rounded-[3rem] shadow-sm">
+                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-8 border-b border-slate-50 pb-4">Revenue Generation By Category</h3>
+                                        <div className="space-y-6">
+                                            {financialData.topCategories.map((cat, i) => (
+                                                <div key={cat.id} className="space-y-2">
+                                                    <div className="flex justify-between items-end">
+                                                        <div>
+                                                            <span className="text-[8px] font-black text-indigo-500 uppercase tracking-widest block mb-0.5">#{i+1} RANK</span>
+                                                            <p className="text-xs font-black text-slate-900 uppercase italic truncate">{cat.label}</p>
+                                                        </div>
+                                                        <p className="text-sm font-black text-indigo-900">{formatPrice(cat.value * 0.10)} <span className="text-[8px] text-slate-400 font-bold">(COMM)</span></p>
+                                                    </div>
+                                                    <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className="h-full bg-indigo-600 rounded-full transition-all duration-1000" 
+                                                            style={{ width: `${(cat.value / financialData.topCategories[0].value) * 100}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <p className="text-[8px] font-bold text-slate-400 uppercase">Hammer Volume: {formatPrice(cat.value)}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="lg:col-span-5 bg-white border border-slate-100 p-8 rounded-[3rem] shadow-sm flex flex-col min-w-0">
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6 flex justify-between items-center">
+                                        <span>Recent Inflows</span>
+                                        <span className="text-[8px] bg-slate-100 px-2 py-1 rounded text-slate-400">REALTIME</span>
+                                    </h3>
+                                    <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar">
+                                        {financialData.syntheticLedger.map((tx) => (
+                                            <div key={tx.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center gap-4 group hover:bg-white hover:shadow-md transition-all">
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase ${
+                                                            tx.type === 'Commission' ? 'bg-emerald-100 text-emerald-700' : 
+                                                            tx.type === 'Boost' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'
+                                                        }`}>{tx.type}</span>
+                                                        <span className="text-[8px] text-slate-400 font-bold">{tx.date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                                    </div>
+                                                    <p className="text-xs font-black text-slate-800 uppercase italic truncate">{tx.desc}</p>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <p className="text-sm font-black text-slate-900">+{formatPrice(tx.amount)}</p>
+                                                    <span className="text-[7px] font-black text-emerald-500 uppercase">RECEIVED</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {activeTab === 'listings' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-fade-in">
