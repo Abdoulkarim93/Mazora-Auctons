@@ -178,7 +178,7 @@ const EditInventoryDrawer = ({ item, isOpen, onClose }: { item: InventoryItem | 
                         <div className="grid grid-cols-4 gap-2">
                             {formData.images.map((img, idx) => (
                                 <div key={idx} className="aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100 cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group">
-                                    <LazyImage src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" onClick={() => setPreviewMedia({type: 'image', url: img})} />
+                                    <LazyImage src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" handleManualPlay={(e) => {}} />
                                     {!isPostAuction && <button onClick={() => setFormData(p => ({...p, images: p.images.filter((_, i) => i !== idx)}))} className="absolute top-1 right-1 bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">✕</button>}
                                 </div>
                             ))}
@@ -259,6 +259,20 @@ export const Profile = () => {
                     <div className="p-4 md:p-8 text-center"><p className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Yıl</p><p className="text-base md:text-2xl font-black text-gray-900 leading-tight">{new Date(user.joinedDate).getFullYear()}</p></div>
                 </div>
             </div>
+
+            {/* Profile/Store Gallery Display */}
+            {user.profileGallery && user.profileGallery.length > 0 && (
+                <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-xl border border-gray-100 p-8 md:p-12 mb-6 md:mb-12">
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-8 text-center md:text-left">MAĞAZA GÖRSELLERİ / GALERİ</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        {user.profileGallery.map((img, idx) => (
+                            <div key={idx} className="aspect-square rounded-[2rem] overflow-hidden shadow-sm border border-gray-50 hover:shadow-xl transition-all">
+                                <LazyImage src={img} alt={`Store View ${idx}`} className="w-full h-full object-cover" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-xl border border-gray-100 overflow-hidden">
                 <div className="flex border-b border-gray-100 overflow-x-auto no-scrollbar bg-slate-50/30">

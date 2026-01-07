@@ -202,6 +202,7 @@ const EditUserModal = ({ user, isOpen, onClose }: { user: User | null, isOpen: b
     const { adminUpdateUser, showToast, formatPrice } = useApp();
     const [formData, setFormData] = useState<Partial<User>>({});
     const [isCheckingFace, setIsCheckingFace] = useState(false);
+    const [isConvertingMedia, setIsConvertingMedia] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -215,21 +216,29 @@ const EditUserModal = ({ user, isOpen, onClose }: { user: User | null, isOpen: b
                 isStore: user.isStore || false,
                 isVerified: user.isVerified || false,
                 sellerTier: user.sellerTier || 'quick',
-                avatarUrl: user.avatarUrl
+                avatarUrl: user.avatarUrl,
+                profileGallery: user.profileGallery || []
             });
         }
     }, [user, isOpen]);
 
     if (!isOpen || !user) return null;
 
+    const convertFileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+        });
+    };
+
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             setIsCheckingFace(true);
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                const base64Data = reader.result as string;
+            try {
+                const base64Data = await convertFileToBase64(file);
                 const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
                 
                 if (formData.isStore) {
@@ -247,8 +256,48 @@ const EditUserModal = ({ user, isOpen, onClose }: { user: User | null, isOpen: b
                 } else {
                     showToast("Yüz algılanamadı. Mağaza hesabı değilse bireysel üyelik için selfie zorunludur.", "warning");
                 }
-            };
+            } catch (err) {
+                setIsCheckingFace(false);
+                showToast("Medya işleme hatası.", "error");
+            }
         }
+    };
+
+    const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            // FIX: Explicitly casting Array.from result to File[] to satisfy convertFileToBase64 parameter type requirement.
+            const files = Array.from(e.target.files) as File[];
+            const currentGallery = formData.profileGallery || [];
+            const remaining = 5 - currentGallery.length;
+            
+            if (remaining <= 0) {
+                showToast("En fazla 5 görsel yükleyebilirsiniz.", "warning");
+                return;
+            }
+
+            setIsConvertingMedia(true);
+            try {
+                const newImages = await Promise.all(
+                    files.slice(0, remaining).map(file => convertFileToBase64(file))
+                );
+                setFormData(prev => ({
+                    ...prev,
+                    profileGallery: [...(prev.profileGallery || []), ...newImages]
+                }));
+                showToast(`${newImages.length} görsel galeriye eklendi.`, "success");
+            } catch (err) {
+                showToast("Görsel yüklenirken hata oluştu.", "error");
+            } finally {
+                setIsConvertingMedia(false);
+            }
+        }
+    };
+
+    const removeFromGallery = (idx: number) => {
+        setFormData(prev => ({
+            ...prev,
+            profileGallery: prev.profileGallery?.filter((_, i) => i !== idx)
+        }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -287,6 +336,35 @@ const EditUserModal = ({ user, isOpen, onClose }: { user: User | null, isOpen: b
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
                             {formData.isStore ? 'MAĞAZA MODU: LOGO YÜKLENEBİLİR' : 'BİREYSEL MOD: SELFİE ZORUNLU'}
                         </p>
+                    </div>
+
+                    {/* Profile Gallery Multi-Upload */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center ml-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PROFİL GALERİSİ / MAĞAZA GÖRSELLERİ (MAX 5)</label>
+                            {isConvertingMedia && <span className="text-[8px] font-black text-indigo-600 animate-pulse">YÜKLENİYOR...</span>}
+                        </div>
+                        <div className="grid grid-cols-5 gap-2">
+                            {(formData.profileGallery || []).map((img, idx) => (
+                                <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-slate-100 relative group bg-slate-50 shadow-sm">
+                                    <LazyImage src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+                                    <button 
+                                        type="button"
+                                        onClick={() => removeFromGallery(idx)}
+                                        className="absolute inset-0 flex items-center justify-center bg-red-600/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <span className="text-xs font-black">SİL</span>
+                                    </button>
+                                </div>
+                            ))}
+                            {(formData.profileGallery || []).length < 5 && (
+                                <label className="aspect-square rounded-lg border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-600 hover:bg-indigo-50 transition-all">
+                                    <span className="text-xl">+</span>
+                                    <span className="text-[7px] font-black uppercase text-slate-400">YÜKLE</span>
+                                    <input type="file" multiple accept="image/*" className="hidden" onChange={handleGalleryUpload} disabled={isConvertingMedia} />
+                                </label>
+                            )}
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -855,7 +933,7 @@ export const AdminPanel = () => {
                         <span className="text-[7px] font-black uppercase text-white mt-1">MARKET</span>
                     </Link>
                     <button onClick={() => setActiveTab('finance')} className={`flex flex-col items-center justify-center w-full h-full ${(activeTab === 'finance' ? 'text-white scale-110' : 'text-white/40')}`}>
-                        <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                        <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                         <span className="text-[7px] font-black uppercase tracking-tight">FİNANSAL</span>
                     </button>
                     <button onClick={() => setActiveTab('logs')} className={`flex flex-col items-center justify-center w-full h-full ${(activeTab === 'logs' ? 'text-white scale-110' : 'text-white/40')}`}>
