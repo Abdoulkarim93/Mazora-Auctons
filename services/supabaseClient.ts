@@ -5,10 +5,15 @@ if (typeof window !== 'undefined' && typeof (window as any).process === 'undefin
     (window as any).process = { env: {} };
 }
 
-// Safe environment variable access
+// Safe environment variable access helper
 const getEnv = (key: string) => {
     try {
-        return (typeof process !== 'undefined' && process.env?.[key]) || '';
+        // First try standard process.env, then check if Vite's import.meta.env is available
+        const val = (typeof process !== 'undefined' && process.env?.[key]);
+        if (val) return val;
+        
+        // @ts-ignore - Support for various build tool env injections
+        return window?.process?.env?.[key] || '';
     } catch {
         return '';
     }
@@ -61,7 +66,6 @@ export const getLocalVault = (table: string) => {
 
 /**
  * Robust Save with Quota Protection
- * AGGRESSIVE RESCUE: If storage is full, we strip ALL non-essential media (Base64).
  */
 export const saveToLocalVault = (table: string, data: any) => {
     const key = `mazora_prod_${table}`;
@@ -70,12 +74,10 @@ export const saveToLocalVault = (table: string, data: any) => {
         const serialized = JSON.stringify(data);
         localStorage.setItem(key, serialized);
     } catch (e: any) {
-        // QuotaExceededError handling (Chrome/Safari/Firefox codes included)
         if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
             console.warn(`[CRITICAL] Storage full for ${table}! Executing Tier-2 Media Purge.`);
             
             try {
-                // Tier-2 Rescue: Strip all large strings and explicit media arrays
                 const stripMedia = (obj: any): any => {
                     if (Array.isArray(obj)) {
                         return obj.map(item => stripMedia(item));
@@ -84,27 +86,22 @@ export const saveToLocalVault = (table: string, data: any) => {
                         for (const k in obj) {
                             if (Object.prototype.hasOwnProperty.call(obj, k)) {
                                 const val = obj[k];
-                                
-                                // PROACTIVE PURGE: Remove keys known to hold media blobs
                                 if (['images', 'image', 'videoUrl', 'avatarUrl', 'imageUrl'].includes(k)) {
                                     if (typeof val === 'string' && val.length > 500) {
                                         cleaned[k] = "[MEDIA_PURGED]";
                                         continue;
                                     }
                                     if (Array.isArray(val)) {
-                                        cleaned[k] = []; // Empty images array
+                                        cleaned[k] = [];
                                         continue;
                                     }
                                 }
-
                                 if (typeof val === 'string') {
-                                    // RECOVERY THRESHOLD: 10,000 chars (~10KB)
                                     if (val.startsWith('data:') || val.length > 10000) {
                                         cleaned[k] = "[LARGE_STRING_REMOVED]";
                                     } else {
                                         cleaned[k] = val;
                                     }
-                                // Fix: Change 'v' to 'val' as 'v' is not defined in this scope.
                                 } else if (typeof val === 'object' && val !== null) {
                                     cleaned[k] = stripMedia(val);
                                 } else {
@@ -119,17 +116,11 @@ export const saveToLocalVault = (table: string, data: any) => {
 
                 const rescuedData = stripMedia(data);
                 const rescuedSerialized = JSON.stringify(rescuedData);
-                
-                // Atomic Write
                 localStorage.removeItem(key);
                 localStorage.setItem(key, rescuedSerialized);
-                
-                console.warn(`[RECOVERY SUCCESS] ${table} saved as metadata-only payload.`);
             } catch (rescueErr) {
-                console.error(`[FATAL] Recovery logic failed for ${table}:`, rescueErr);
+                console.error(`[FATAL] Recovery logic failed:`, rescueErr);
             }
-        } else {
-            console.error(`[VAULT ERROR] Non-quota error saving ${table}:`, e);
         }
     }
 };
