@@ -13,6 +13,16 @@ const getRobustAvatar = (name: string) => {
     return `https://ui-avatars.com/api/?name=${cleanName}&background=1E3A8A&color=fff&size=512&bold=true&format=svg`;
 };
 
+// LIVE EXCHANGE RATES (Mocked for Demo from TRY base)
+const EXCHANGE_RATES: Record<string, { code: string; rate: number; symbol: string; locale: string }> = {
+    'TRY': { code: 'TRY', rate: 1, symbol: '₺', locale: 'tr-TR' },
+    'XOF': { code: 'XOF', rate: 18.52, symbol: 'CFA', locale: 'fr-SN' }, // Senegal
+    'GHS': { code: 'GHS', rate: 0.44, symbol: 'GH₵', locale: 'en-GH' }, // Ghana
+    'EUR': { code: 'EUR', rate: 0.027, symbol: '€', locale: 'de-DE' },  // Germany
+    'QAR': { code: 'QAR', rate: 0.11, symbol: 'QR', locale: 'en-QA' },  // Qatar
+    'USD': { code: 'USD', rate: 0.029, symbol: '$', locale: 'en-US' }
+};
+
 interface AppContextType {
     user: User | null;
     auctions: AuctionItem[];
@@ -121,31 +131,12 @@ const TRANSLATIONS: Record<Language, any> = {
         close: 'Kapat',
         copied: 'Kopyalandı!'
     },
-    schedule: { weekdays: 'Çarşamba, Cuma ve Pazar' },
-    filters: { 
-      marketplace: 'Mezat Pazaryeri', 
-      activeAuctions: 'Aktif Mezatlar', 
-      resultsFor: 'Sonuçlar:',
-      sort: { endingSoon: 'Bitiş Tarihi (Yakın)', priceLow: 'Fiyat (Düşükten Yükseğe)', priceHigh: 'Fiyat (Yüksekten Düşüğe)', newest: 'En Yeni' }
-    },
-    quick_list: {
-        boostSuccess: 'TEBRİKLER! İLANINIZ ÖNE ÇIKARILDI',
-        success: 'İLANINIZ BAŞARIYLA YAYINLANDI',
-        premiumActive: 'PREMIUM GÖRÜNÜRLÜK AKTİF',
-        smsActive: 'SMS BİLDİRİMLERİ AKTİF',
-        firstNotif: 'İLK BİLDİRİM GÖNDERİLDİ',
-        notifSent: 'Detaylar telefonunuza iletildi',
-        priorityList: 'ÖNCELİKLİ LİSTELEME',
-        priorityDesc: 'İlanınız tüm aramalarda ve ana sayfada en üstte yer alacaktır.',
-        pulse4h: '4 SAATLİK DOPİNG',
-        pulseDesc: 'İlanınız her 4 saatte bir otomatik olarak listenin en başına taşınır.',
-        registerNow: 'ÜYE OL VE TAKİP ET'
-    }
+    filters: { resultsFor: 'Sonuçlar:', marketplace: 'Pazaryeri', activeAuctions: 'Aktif Mezat', sort: { endingSoon: 'Sona Erenler', priceLow: 'En Düşük Fiyat', priceHigh: 'En Yüksek Fiyat', newest: 'En Yeni' } }
   },
   en: {
     nav: { home: 'Home', categories: 'Categories', sell: 'Sell', requests: 'Requests', profile: 'Profile', login: 'Login', signup: 'Sign Up', search: 'Search items...', feedback: 'Feedbacks' },
-    common: { loading: 'Loading...', cancel: 'Cancel', new: 'New', used: 'Used', timeLeft: 'Time Left', expired: 'EXPIRED', back: 'GO BACK', retry: 'RETRY', notFoundTitle: 'Page Not Found', notFoundDesc: 'The page you are looking for might have been removed.', goHome: 'Back to Home', browseCats: 'Browse Categories' },
-    auth: { loginTitle: 'Login', loginSubtitle: 'Login to start bidding.', emailLabel: 'ID, Phone or Email', passwordLabel: 'Password', forgotPassword: 'Forgot Password', forgotDesc: 'Enter your email or phone to reset password.', sendCode: 'Send Code', verifyCode: 'Vérifier le code', newPass: 'New Password', resetPass: 'Update Password', govIdTitle: 'Identity Verification' },
+    common: { loading: 'Loading...', cancel: 'Cancel', new: 'New', used: 'Used', timeLeft: 'Time Left', expired: 'EXPIRED', back: 'GO BACK', retry: 'RETRY', servant: 'Servant', notFoundTitle: 'Page Not Found', notFoundDesc: 'The page you are looking for might have been removed.', goHome: 'Back to Home', browseCats: 'Browse Categories' },
+    auth: { loginTitle: 'Login', loginSubtitle: 'Login to start bidding.', emailLabel: 'ID, Phone or Email', passwordLabel: 'Password', forgotPassword: 'Forgot Password', forgotDesc: 'Enter your email or phone to reset password.', sendCode: 'Send Code', verifyCode: 'Verify Code', newPass: 'New Password', resetPass: 'Update Password', govIdTitle: 'Identity Verification' },
     hero: { start: 'Starting', view: 'View' },
     home: { 
       feelingLucky: 'Feeling Lucky', 
@@ -170,7 +161,7 @@ const TRANSLATIONS: Record<Language, any> = {
       disclaimer: 'Please read carefully.', preparingContent: 'Legal texts are being generated...', contact60: '60 Min Guarantee', contact60Desc: 'Appointment scheduled within 60 mins of closing.', penaltyLabel: 'Penalty', penaltyDesc: '10% penalty for rules violations.', reserveLabel: 'Reserve Price', reserveDesc: 'Bids below reserve do not guarantee sale.', cargoLabel: 'Cargo Split', cargoDesc: 'Domestic shipping is split 50/50.',
       feeNotice: 'All fees except listing are collected at physical delivery.', boostOption: 'Visibility Boost is optional.'
     },
-    topbar: { schedule: 'Auction Days: Wednesday, Friday, Sunday (10:00 - 22:00)', escrow: 'Payment at Delivery Guarantee', verified: 'Verified Sellers' },
+    topbar: { schedule: 'Auction Days: Wed, Fri, Sun (10:00 - 22:00)', escrow: 'Payment at Delivery Guarantee', verified: 'Verified Sellers' },
     profile: { logout: 'Logout', edit: 'Edit', notifications: 'Notifications' },
     requests: { 
       quoteCenter: 'Requests & Quotes', myRequests: 'My Requests', postRequest: 'Post Request', sellerHint: 'Sellers provide custom quotes for your needs.', budget: 'Budget', quantity: 'Quantity', serviceDate: 'Service Date', expiresIn: 'Time Left', submitQuote: 'Submit Quote', receivedQuotes: 'Quotes Received', acceptOffer: 'Accept Offer', offerAccepted: 'Accepted', noQuotes: 'No requests yet.',
@@ -183,26 +174,7 @@ const TRANSLATIONS: Record<Language, any> = {
         close: 'Close',
         copied: 'Copied!'
     },
-    schedule: { weekdays: 'Wednesday, Friday and Sunday' },
-    filters: { 
-      marketplace: 'Auction Marketplace', 
-      activeAuctions: 'Active Auctions', 
-      resultsFor: 'Results for:',
-      sort: { endingSoon: 'Ending Soon', priceLow: 'Price (Low to High)', priceHigh: 'Price (High to Low)', newest: 'Newest' }
-    },
-    quick_list: {
-        boostSuccess: 'CONGRATULATIONS! BOOST ACTIVE',
-        success: 'LISTING PUBLISHED SUCCESSFULLY',
-        premiumActive: 'PREMIUM VISIBILITY ACTIVE',
-        smsActive: 'SMS NOTIFICATIONS ACTIVE',
-        firstNotif: 'FIRST NOTIFICATION SENT',
-        notifSent: 'Details sent to your phone',
-        priorityList: 'PRIORITY LISTING',
-        priorityDesc: 'Your ad will be at the top of all searches and the homepage.',
-        pulse4h: '4-HOUR DOPING',
-        pulseDesc: 'Your ad is moved to the top every 4 hours automatically.',
-        registerNow: 'REGISTER TO TRACK'
-    }
+    filters: { resultsFor: 'Results for:', marketplace: 'Marketplace', activeAuctions: 'Active Auctions', sort: { endingSoon: 'Ending Soon', priceLow: 'Lowest Price', priceHigh: 'Highest Price', newest: 'Newest' } }
   },
   fr: {
     nav: { home: 'Accueil', categories: 'Catégories', sell: 'Vendre', requests: 'Demandes', profile: 'Profil', login: 'Connexion', signup: 'S\'inscrire', search: 'Rechercher...', feedback: 'Avis' },
@@ -222,7 +194,7 @@ const TRANSLATIONS: Record<Language, any> = {
     auction: { 
       currentBid: 'Enchère actuelle', endsIn: 'Se termine dans', placeBid: 'Enchérir', joinWaitlist: 'personnes sur liste d\'attente', dealObligation: 'Chaque enchère est contraignante et les gagnants acceptent de payer à la livraison.',
       prebid: 'PRÉ-ENCHÈRE',
-      analyser: { title: 'Analyse de prix', source: 'Valeur estimée basée su les données du marché.', steal: 'Super affaire', fair: 'Prix juste', premium: 'Valeur Premium' }
+      analyser: { title: 'Analyse de prix', source: 'Valeur estimée basée sur les données du marché.', steal: 'Super affaire', fair: 'Prix juste', premium: 'Valeur Premium' }
     },
     workflow: { 
       fees: { total: 'Total', itemPrice: 'Prix d\'adjudication', serviceFee: 'Frais de service', cargo: 'Livraison', nowPay: 'Payer à la livraison', penalty: 'Pénalité d\'annulation', quickListing: 'Annonce rapide', weeklyRent: 'Loyer hebdomadaire', buyerCommission: 'Commission acheteur', sellerCommission: 'Commission vendeur' } 
@@ -230,12 +202,12 @@ const TRANSLATIONS: Record<Language, any> = {
     legal: { 
       helpCenter: 'Centre d\'aide', rulesTitle: 'Règles des enchères', termsTitle: 'Conditions d\'utilisation', preparing: 'Préparation des documents...', escrowTitle: 'Politique d\'entiercement', ethicsTitle: 'Politique d\'éthique', privacyTitle: 'Politique de confidentialité', contractTitle: 'Contrat d\'adhésion', faqTitle: 'FAQ',
       disclaimer: 'Veuillez lire attentivement.', preparingContent: 'Les textes juridiques sont en cours de génération...', contact60: 'Garantie 60 min', contact60Desc: 'Rendez-vous planifié dans les 60 min suivant la clôture.', penaltyLabel: 'Pénalité', penaltyDesc: '10% de pénalité pour violation des règles.', reserveLabel: 'Prix de réserve', reserveDesc: 'Les enchères inférieures à la réserve ne garantissent pas la vente.', cargoLabel: 'Partage de frais de port', cargoDesc: 'Les frais de port nationaux sont partagés 50/50.',
-      feeNotice: 'Tous les frais sauf l\'annonce sont collectés lors de la livraison physique.', boostOption: 'Le boost de visibilité est opionnel.'
+      feeNotice: 'Tous les frais sauf l\'annonce sont collectés lors de la livraison physique.', boostOption: 'Le boost de visibilité est optionnel.'
     },
-    topbar: { schedule: 'Jours d\'enchères : mercredi, vendredi, dimanche (10h00 - 22h00)', escrow: 'Garantie de paiement à la livraison', verified: 'Vendeurs vérifiés' },
+    topbar: { schedule: 'Jours d\'enchères : Mer, Ven, Dim (10h00 - 22h00)', escrow: 'Garantie de paiement à la livraison', verified: 'Vendeurs vérifiés' },
     profile: { logout: 'Déconnexion', edit: 'Modifier', notifications: 'Notifications' },
     requests: { 
-      quoteCenter: 'Demandes & Devis', myRequests: 'Mes demandes', postRequest: 'Publier une demande', sellerHint: 'Les vendeurs proposent des devis personnalisés pour vos besoins.', budget: 'Budget', quantity: 'Quantité', serviceDate: 'Date du service', expiresIn: 'Temps restant', submitQuote: 'Soumettre un devis', receivedQuotes: 'Devis reçus', acceptOffer: 'Accepter l\'offre', offerAccepted: 'Accepted', noQuotes: 'Pas encore de demandes.',
+      quoteCenter: 'Demandes & Devis', myRequests: 'Mes demandes', postRequest: 'Publier une demande', sellerHint: 'Les vendeurs proposent des devis personnalisés pour vos besoins.', budget: 'Budget', quantity: 'Quantité', serviceDate: 'Date du service', expiresIn: 'Temps restant', submitQuote: 'Soumettre un devis', receivedQuotes: 'Devis reçus', acceptOffer: 'Accepter l\'offre', offerAccepted: 'Accepted', noQuotes: 'Pas noch de demandes.',
       typeProduct: 'Achat de produit', typeService: 'Demande de service', productPlaceholder: 'De quel produit avez-vous besoin ?', servicePlaceholder: 'Quel service recherchez-vous ?', descPlaceholder: 'Décrivez en détail...', sealed: 'Les devis sont scellés et privés.', labels: { location: 'Emplacement', date: 'Date', target: 'Cible' }, badges: { product: 'Produit', service: 'Service' }
     },
     referral: {
@@ -245,26 +217,7 @@ const TRANSLATIONS: Record<Language, any> = {
         close: 'Fermer',
         copied: 'Copié !'
     },
-    schedule: { weekdays: 'Mercredi, Vendredi et Dimanche' },
-    filters: { 
-      marketplace: 'Marché des Enchères', 
-      activeAuctions: 'Enchères Actives', 
-      resultsFor: 'Résultats pour:',
-      sort: { endingSoon: 'Fin Proche', priceLow: 'Prix (Croissant)', priceHigh: 'Prix (Décroissant)', newest: 'Plus Récent' }
-    },
-    quick_list: {
-        boostSuccess: 'FÉLICITATIONS! BOOST ACTIF',
-        success: 'ANNONCE PUBLIÉE AVEC SUCCÈS',
-        premiumActive: 'VISIBILITÉ PREMIUM ACTIVE',
-        smsActive: 'NOTIFICATIONS SMS ACTIVES',
-        firstNotif: 'PREMIÈRE NOTIFICATION ENVOYÉE',
-        notifSent: 'Détails envoyés à votre téléphone',
-        priorityList: 'LISTE PRIORITAIRE',
-        priorityDesc: 'Votre annonce sera en haut de toutes les recherches et de la page d\'accueil.',
-        pulse4h: 'DOPAGE DE 4 HEURES',
-        pulseDesc: 'Votre annonce est déplacée vers le haut toutes les 4 heures automatiquement.',
-        registerNow: 'INSCRIVEZ-VOUS POUR SUIVRE'
-    }
+    filters: { resultsFor: 'Résultats pour:', marketplace: 'Marché', activeAuctions: 'Enchères Actives', sort: { endingSoon: 'Se termine bientôt', priceLow: 'Prix croissant', priceHigh: 'Prix décroissant', newest: 'Plus récent' } }
   }
 };
 
@@ -297,6 +250,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
     const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (!user) return;
+        if (user.countryCode === 'SN') {
+            setLanguageState('fr');
+        } else if (user.countryCode === 'GH' || user.countryCode === 'DE' || user.countryCode === 'QA') {
+            setLanguageState('en');
+        } else {
+            setLanguageState('tr');
+        }
+    }, [user]);
 
     useEffect(() => { saveToLocalVault('current_user', user); }, [user]);
     useEffect(() => { saveToLocalVault('auctions', auctions); }, [auctions]);
@@ -351,7 +315,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return false;
     };
 
-    const logout = () => setUser(null);
+    const logout = () => {
+        setUser(null);
+        setLanguageState('tr'); // Reset to default on logout
+    };
 
     const updateUser = (updates: Partial<User>) => {
         if (!user) return;
@@ -360,8 +327,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setAllUsers(prev => prev.map(u => u.id === user.id ? updated : u));
     };
 
-    const formatPrice = (amount: number) => {
-        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(amount);
+    const getCurrencyCode = () => {
+        if (user?.preferredCurrency) return user.preferredCurrency;
+        if (user?.countryCode === 'SN') return 'XOF';
+        if (user?.countryCode === 'GH') return 'GHS';
+        if (user?.countryCode === 'DE') return 'EUR';
+        if (user?.countryCode === 'QA') return 'QAR';
+        return 'TRY';
+    };
+
+    const formatPrice = (amountInTRY: number) => {
+        const currCode = getCurrencyCode();
+        const info = EXCHANGE_RATES[currCode] || EXCHANGE_RATES['TRY'];
+        const converted = amountInTRY * info.rate;
+        
+        return new Intl.NumberFormat(info.locale, { 
+            style: 'currency', 
+            currency: currCode, 
+            maximumFractionDigits: 0 
+        }).format(converted);
     };
 
     const register = async (payload: any) => {
@@ -587,7 +571,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const value: AppContextType = {
         user, auctions, language, toasts, requests, feedbacks, allUsers,
         tickets: [], disputes: [], giftCodes: [], auditLogs, contracts: [], isReferralModalOpen,
-        currency: { code: 'TRY', rate: 1, symbol: '₺', locale: 'tr-TR' },
+        currency: EXCHANGE_RATES[getCurrencyCode()] || EXCHANGE_RATES['TRY'],
         setLanguage, t, login, logout, showToast, formatPrice,
         topUpWallet: (amount) => updateUser({ walletBalance: (user?.walletBalance || 0) + amount }),
         placeBid, buyNow, register, addToInventory, 

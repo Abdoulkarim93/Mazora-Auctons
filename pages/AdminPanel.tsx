@@ -16,6 +16,15 @@ const MobileHandle = () => (
     </div>
 );
 
+const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+    });
+};
+
 const CreateUserModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
     const { adminCreateUser, showToast } = useApp();
     const [formData, setFormData] = useState({
@@ -106,6 +115,7 @@ const CreateUserModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => 
 const EditAuctionModal = ({ auction, isOpen, onClose }: { auction: AuctionItem | null, isOpen: boolean, onClose: () => void }) => {
     const { adminUpdateAuction, showToast } = useApp();
     const [formData, setFormData] = useState<Partial<AuctionItem>>({});
+    const [isConverting, setIsConverting] = useState(false);
 
     useEffect(() => {
         if (auction) setFormData({ 
@@ -123,6 +133,28 @@ const EditAuctionModal = ({ auction, isOpen, onClose }: { auction: AuctionItem |
     }, [auction, isOpen]);
 
     if (!isOpen || !auction) return null;
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            // Fix: Added explicit File[] cast to resolve 'unknown' type error in map
+            const files = Array.from(e.target.files) as File[];
+            setIsConverting(true);
+            try {
+                const results = await Promise.all(files.map(f => convertFileToBase64(f)));
+                setFormData(prev => ({ ...prev, images: [...(prev.images || []), ...results].slice(0, 5) }));
+            } finally { setIsConverting(false); }
+        }
+    };
+
+    const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setIsConverting(true);
+            try {
+                const res = await convertFileToBase64(e.target.files[0]);
+                setFormData(prev => ({ ...prev, videoUrl: res }));
+            } finally { setIsConverting(false); }
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -160,14 +192,28 @@ const EditAuctionModal = ({ auction, isOpen, onClose }: { auction: AuctionItem |
                         <textarea rows={4} value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-sm outline-none" />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase ml-1">ANA GÖRSEL (URL/BASE64)</label>
-                            <input value={formData.images?.[0] || ''} onChange={e => setFormData({...formData, images: [e.target.value, ...(formData.images?.slice(1) || [])]})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-mono text-[9px] outline-none" />
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">MEDYA GÜNCELLEME (MAX 5 GÖRSEL + 1 VİDEO)</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label className="border-2 border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors">
+                                <span className="text-xl">📸</span>
+                                <span className="text-[8px] font-black text-slate-400 uppercase">GÖRSEL EKLE</span>
+                                <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} />
+                            </label>
+                            <label className="border-2 border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors">
+                                <span className="text-xl">🎥</span>
+                                <span className="text-[8px] font-black text-slate-400 uppercase">{formData.videoUrl ? 'VİDEO YÜKLENDİ' : 'VİDEO EKLE'}</span>
+                                <input type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
+                            </label>
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase ml-1">VİDEO (URL/BASE64)</label>
-                            <input value={formData.videoUrl || ''} onChange={e => setFormData({...formData, videoUrl: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-mono text-[9px] outline-none" />
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
+                            {(formData.images || []).map((img, i) => (
+                                <div key={i} className="w-16 h-16 rounded-xl border border-slate-200 overflow-hidden shrink-0 relative group">
+                                    <img src={img} className="w-full h-full object-cover" />
+                                    <button type="button" onClick={() => setFormData(p => ({...p, images: p.images?.filter((_, idx) => idx !== i)}))} className="absolute inset-0 bg-red-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-black text-[8px]">SİL</button>
+                                </div>
+                            ))}
+                            {formData.videoUrl && <div className="w-16 h-16 rounded-xl border border-indigo-200 bg-indigo-900 flex items-center justify-center shrink-0 text-lg relative group"><span className="animate-pulse">🎥</span><button type="button" onClick={() => setFormData(p => ({...p, videoUrl: ''}))} className="absolute inset-0 bg-red-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-black text-[8px]">SİL</button></div>}
                         </div>
                     </div>
 
@@ -191,7 +237,9 @@ const EditAuctionModal = ({ auction, isOpen, onClose }: { auction: AuctionItem |
                         </div>
                     </div>
 
-                    <button type="submit" className="w-full bg-indigo-900 text-white font-black py-5 rounded-2xl shadow-xl uppercase text-xs tracking-widest transition-all active:scale-95 shadow-indigo-900/20">MEZATI GÜNCELLE VE YAYINLA</button>
+                    <button type="submit" disabled={isConverting} className="w-full bg-indigo-900 text-white font-black py-5 rounded-2xl shadow-xl uppercase text-xs tracking-widest transition-all active:scale-95 shadow-indigo-900/20 disabled:opacity-50">
+                        {isConverting ? 'MEDYA İŞLENİYOR...' : 'MEZATI GÜNCELLE VE YAYINLA'}
+                    </button>
                 </form>
             </div>
         </div>
@@ -223,15 +271,6 @@ const EditUserModal = ({ user, isOpen, onClose }: { user: User | null, isOpen: b
     }, [user, isOpen]);
 
     if (!isOpen || !user) return null;
-
-    const convertFileToBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = error => reject(error);
-        });
-    };
 
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -265,7 +304,6 @@ const EditUserModal = ({ user, isOpen, onClose }: { user: User | null, isOpen: b
 
     const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            // FIX: Explicitly casting Array.from result to File[] to satisfy convertFileToBase64 parameter type requirement.
             const files = Array.from(e.target.files) as File[];
             const currentGallery = formData.profileGallery || [];
             const remaining = 5 - currentGallery.length;
@@ -338,7 +376,6 @@ const EditUserModal = ({ user, isOpen, onClose }: { user: User | null, isOpen: b
                         </p>
                     </div>
 
-                    {/* Profile Gallery Multi-Upload */}
                     <div className="space-y-3">
                         <div className="flex justify-between items-center ml-1">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PROFİL GALERİSİ / MAĞAZA GÖRSELLERİ (MAX 5)</label>
@@ -380,7 +417,7 @@ const EditUserModal = ({ user, isOpen, onClose }: { user: User | null, isOpen: b
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1">
                             <label className="text-[10px] font-black text-slate-400 uppercase ml-1">ŞİFRE</label>
-                            <input required type="text" value={formData.password || ''} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-black text-sm outline-none text-indigo-900" />
+                            <input required type="text" value={formData.password || ''} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-sm outline-none text-indigo-900" />
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black text-slate-400 uppercase ml-1">CÜZDAN (TL)</label>
@@ -494,7 +531,7 @@ const UserCommandCenter = ({ user, isOpen, onClose }: { user: User | null, isOpe
     const [isEditUserOpen, setIsEditUserOpen] = useState(false);
     const [listingStrategy, setListingStrategy] = useState<'catalog' | 'live' | '24h'>('catalog');
     const [selectedSlotId, setSelectedSlotId] = useState<string>('');
-    const [showPass, setShowPass] = useState(false);
+    const [isConvertingMedia, setIsConvertingMedia] = useState(false);
     
     const [newItem, setNewItem] = useState({
         title: '',
@@ -537,6 +574,27 @@ const UserCommandCenter = ({ user, isOpen, onClose }: { user: User | null, isOpe
     }, [availableSlots]);
 
     if (!isOpen || !user) return null;
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files) as File[];
+            setIsConvertingMedia(true);
+            try {
+                const results = await Promise.all(files.map(f => convertFileToBase64(f)));
+                setNewItem(prev => ({ ...prev, images: [...prev.images, ...results].slice(0, 5) }));
+            } finally { setIsConvertingMedia(false); }
+        }
+    };
+
+    const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setIsConvertingMedia(true);
+            try {
+                const res = await convertFileToBase64(e.target.files[0]);
+                setNewItem(prev => ({ ...prev, videoUrl: res }));
+            } finally { setIsConvertingMedia(false); }
+        }
+    };
 
     const handleAddItem = (e: React.FormEvent) => {
         e.preventDefault();
@@ -715,11 +773,35 @@ const UserCommandCenter = ({ user, isOpen, onClose }: { user: User | null, isOpe
                                         <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 ml-1 uppercase">REZERV</label><input type="number" value={newItem.reservePrice} onChange={e => setNewItem({...newItem, reservePrice: parseFloat(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-black text-xs outline-none" /></div>
                                         <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 ml-1 uppercase">HEMEN AL</label><input type="number" value={newItem.buyNowPrice} onChange={e => setNewItem({...newItem, buyNowPrice: parseFloat(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-black text-xs outline-none" /></div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 ml-1 uppercase">ANA GÖRSEL (URL/B64)</label><input value={newItem.images[0] || ''} onChange={e => setNewItem({...newItem, images: [e.target.value, ...(newItem.images.slice(1))]})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-mono text-[9px] break-all" placeholder="data:image/..." /></div>
-                                        <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 ml-1 uppercase">VİDEO (URL/B64)</label><input value={newItem.videoUrl || ''} onChange={e => setNewItem({...newItem, videoUrl: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-mono text-[9px] break-all" placeholder="data:video/..." /></div>
+
+                                    <div className="space-y-3 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">MEDYA YÜKLEME (MAX 5 GÖRSEL + 1 VİDEO)</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <label className="border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-white transition-colors bg-white/50">
+                                                <span className="text-xl">📸</span>
+                                                <span className="text-[8px] font-black text-slate-400 uppercase">GÖRSEL EKLE</span>
+                                                <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                            </label>
+                                            <label className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-white transition-colors bg-white/50 ${newItem.videoUrl ? 'border-primary' : 'border-slate-200'}`}>
+                                                <span className="text-xl">🎥</span>
+                                                <span className="text-[8px] font-black text-slate-400 uppercase">{newItem.videoUrl ? 'VİDEO YÜKLENDİ' : 'VİDEO EKLE'}</span>
+                                                <input type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
+                                            </label>
+                                        </div>
+                                        <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
+                                            {newItem.images.map((img, i) => (
+                                                <div key={i} className="w-16 h-16 rounded-lg border border-slate-200 overflow-hidden shrink-0 relative group">
+                                                    <img src={img} className="w-full h-full object-cover" />
+                                                    <button type="button" onClick={() => setNewItem(p => ({...p, images: p.images.filter((_, idx) => idx !== i)}))} className="absolute inset-0 bg-red-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-black text-[8px]">SİL</button>
+                                                </div>
+                                            ))}
+                                            {newItem.videoUrl && <div className="w-16 h-16 rounded-lg border border-indigo-200 bg-indigo-900 flex items-center justify-center shrink-0 text-lg relative group"><span className="animate-pulse">🎥</span><button type="button" onClick={() => setNewItem(p => ({...p, videoUrl: ''}))} className="absolute inset-0 bg-red-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-black text-[8px]">SİL</button></div>}
+                                        </div>
                                     </div>
-                                    <button type="submit" className="w-full bg-indigo-900 text-white font-black py-4 rounded-2xl shadow-xl uppercase text-xs tracking-widest italic">{(isEditingItem ? 'MODİFİKASYONLARI KAYDET' : 'HESABA ENJEKTE ET 💉')}</button>
+
+                                    <button type="submit" disabled={isConvertingMedia} className="w-full bg-indigo-900 text-white font-black py-4 rounded-2xl shadow-xl uppercase text-xs tracking-widest italic disabled:opacity-50">
+                                        {isConvertingMedia ? 'MEDYA İŞLENİYOR...' : (isEditingItem ? 'MODİFİKASYONLARI KAYDET' : 'HESABA ENJEKTE ET 💉')}
+                                    </button>
                                 </form>
                             </div>
                         ) : activeSection === 'inventory' ? (
@@ -783,10 +865,22 @@ export const AdminPanel = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    
+    // Safety flag to handle immediate redirection during logout
+    const isLoggingOut = useRef(false);
 
-    useEffect(() => { if (!adminUser || adminUser.role !== 'admin') navigate('/admin/login'); }, [adminUser, navigate]);
+    useEffect(() => { 
+        if (isLoggingOut.current) return;
+        if (!adminUser || adminUser.role !== 'admin') navigate('/admin/login'); 
+    }, [adminUser, navigate]);
 
     const activeDealsList = useMemo(() => auctions.filter(a => a.status === AuctionStatus.ACTIVE || a.status === AuctionStatus.ENDED), [auctions]);
+
+    const handleSecureLogout = () => {
+        isLoggingOut.current = true;
+        logout();
+        navigate('/', { replace: true });
+    };
 
     const financialData = useMemo(() => {
         const soldItems = auctions.filter(a => a.status === AuctionStatus.ENDED);
@@ -909,7 +1003,7 @@ export const AdminPanel = () => {
                         <Link to="/" className="w-full flex items-center gap-4 px-4 py-4 rounded-xl font-black text-[10px] uppercase text-indigo-900 bg-indigo-50 hover:bg-indigo-100 transition-colors shadow-sm">
                             🏠 MARKET'E DÖN
                         </Link>
-                        <button onClick={logout} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl font-black text-[10px] uppercase text-red-500 hover:bg-red transition-colors">
+                        <button onClick={handleSecureLogout} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl font-black text-[10px] uppercase text-red-500 hover:bg-red transition-colors">
                             🚪 GÜVENLİ ÇIKIŞ
                         </button>
                     </div>
@@ -933,7 +1027,7 @@ export const AdminPanel = () => {
                         <span className="text-[7px] font-black uppercase text-white mt-1">MARKET</span>
                     </Link>
                     <button onClick={() => setActiveTab('finance')} className={`flex flex-col items-center justify-center w-full h-full ${(activeTab === 'finance' ? 'text-white scale-110' : 'text-white/40')}`}>
-                        <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                        <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0V5a2 2 0 012-2h2a2 2 0 012 v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                         <span className="text-[7px] font-black uppercase tracking-tight">FİNANSAL</span>
                     </button>
                     <button onClick={() => setActiveTab('logs')} className={`flex flex-col items-center justify-center w-full h-full ${(activeTab === 'logs' ? 'text-white scale-110' : 'text-white/40')}`}>
@@ -1140,7 +1234,7 @@ export const AdminPanel = () => {
                                     <div className="w-12 h-12 rounded-2xl bg-slate-50 border-2 border-white shadow-lg overflow-hidden shrink-0 cursor-pointer relative" onClick={() => setSelectedUser(u)}>
                                         <LazyImage src={u.avatarUrl} alt={u.name} className="w-full h-full object-cover" />
                                         {(u.isVerified || u.sellerTier === 'onayli') && (
-                                            <div className="absolute bottom-0 right-0 bg-emerald-500 text-white w-4 h-4 rounded-full flex items-center justify-center border border-white text-[8px]">✓</div>
+                                            <div className="absolute bottom-0 right-0 bg-emerald-500 text-white w-4 h-4 rounded-full flex items-center justify-center border-white text-[8px]">✓</div>
                                         )}
                                     </div>
                                     <div className="min-w-0">

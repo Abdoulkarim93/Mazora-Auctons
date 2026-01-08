@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context';
@@ -465,7 +464,7 @@ export const Layout = ({ children }: LayoutProps) => {
                     </li>
                     <li className="flex items-center justify-center md:justify-start gap-4">
                         <span className="text-2xl">✉️</span>
-                        <a href="mailto:support@mazora.com" className="hover:text-white font-black text-xs">SUPPORT@MAZORA.COM</a>
+                        <a href="mailto:support@mazorra.cloud" className="hover:text-white font-black text-xs">SUPPORT@MAZORRA.CLOUD</a>
                     </li>
                     <li className="flex items-center justify-center md:justify-start gap-4">
                         <span className="text-2xl">📞</span>

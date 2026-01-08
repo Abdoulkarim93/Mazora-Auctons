@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../context.tsx';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { ProductCondition, FEE_STRUCTURE, CategoryType, InventoryStatus, InventoryItem, CATEGORIES, BuyerBid, User, AuctionStatus, AuctionItem } from '../types.ts';
 import { TrustStepper, FeeBreakdown } from '../components/PostAuctionWorkflow.tsx';
 import { LazyImage } from '../components/LazyImage.tsx';
@@ -117,7 +117,7 @@ const EditProfileDrawer = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
 };
 
 const EditInventoryDrawer = ({ item, isOpen, onClose }: { item: InventoryItem | null, isOpen: boolean, onClose: () => void }) => {
-    const { updateInventoryItem, language, auctions, formatPrice, cancelListing, moveLiveToDraft, showToast, maskName } = useApp();
+    const { updateInventoryItem, auctions, formatPrice, cancelListing, moveLiveToDraft, showToast } = useApp();
     const [formData, setFormData] = useState({ title: '', description: '', category: CategoryType.ELECTRONICS, subcategory: '', condition: ProductCondition.USED, location: '', images: [] as string[] });
     const [isSaving, setIsSaving] = useState(false);
     const [previewMedia, setPreviewMedia] = useState<{type: 'image' | 'video', url: string} | null>(null);
@@ -178,7 +178,7 @@ const EditInventoryDrawer = ({ item, isOpen, onClose }: { item: InventoryItem | 
                         <div className="grid grid-cols-4 gap-2">
                             {formData.images.map((img, idx) => (
                                 <div key={idx} className="aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100 cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group">
-                                    <LazyImage src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" handleManualPlay={(e) => {}} />
+                                    <LazyImage src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" onClick={() => setPreviewMedia({type: 'image', url: img})} />
                                     {!isPostAuction && <button onClick={() => setFormData(p => ({...p, images: p.images.filter((_, i) => i !== idx)}))} className="absolute top-1 right-1 bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">✕</button>}
                                 </div>
                             ))}
@@ -206,20 +206,37 @@ const EditInventoryDrawer = ({ item, isOpen, onClose }: { item: InventoryItem | 
 };
 
 export const Profile = () => {
-    const { user, logout, formatPrice } = useApp();
+    const { user, logout, formatPrice, auctions } = useApp();
+    const navigate = useNavigate();
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
     const [activeTab, setActiveTab] = useState<'active' | 'completed' | 'referrals'>('active');
 
+    // RULES OF HOOKS: All hooks must be defined BEFORE any early return.
+    const myInventory = useMemo(() => user?.inventory || [], [user]);
+    const myBids = useMemo(() => user?.bidHistory || [], [user]);
+    const activeInventory = useMemo(() => myInventory.filter(i => ['active', 'draft', 'scheduled'].includes(i.status)), [myInventory]);
+    
+    const activeBids = useMemo(() => {
+        return myBids.filter(b => ['winning', 'outbid', 'pending_seller'].includes(b.status));
+    }, [myBids]);
+
+    const completedItems = useMemo(() => {
+        if (!user) return [];
+        return user.role === 'seller' 
+            ? myInventory.filter(i => ['sold', 'shipped', 'delivered'].includes(i.status)) 
+            : myBids.filter(b => b.status === 'won');
+    }, [user, myInventory, myBids]);
+
+    const isVerifiedUser = !!(user?.isVerified || user?.sellerTier === 'onayli');
+
+    // Safe early return AFTER hooks.
     if (!user) return <Navigate to="/login" />;
 
-    const myInventory = user.inventory || [];
-    const myBids = user.bidHistory || [];
-    const activeInventory = myInventory.filter(i => ['active', 'draft', 'scheduled'].includes(i.status));
-    const activeBids = myBids.filter(b => ['winning', 'outbid', 'pending_seller'].includes(b.status));
-    const completedItems = user.role === 'seller' ? myInventory.filter(i => ['sold', 'shipped', 'delivered'].includes(i.status)) : myBids.filter(b => b.status === 'won');
-
-    const isVerifiedUser = user.isVerified || user.sellerTier === 'onayli';
+    const handleLogout = () => {
+        logout();
+        navigate('/', { replace: true });
+    };
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-6 md:py-12 animate-fade-in text-left">
@@ -248,7 +265,7 @@ export const Profile = () => {
                     </div>
                     <div className="flex flex-wrap justify-center gap-2 md:gap-4 w-full md:w-auto">
                         <button onClick={() => setIsEditProfileOpen(true)} className="flex-1 md:flex-none bg-gray-100 text-gray-600 font-black px-4 py-2.5 md:px-8 md:py-4 rounded-xl uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-gray-200 transition-colors">Ayarlar</button>
-                        <button onClick={logout} className="flex-1 md:flex-none bg-red-50 text-red-600 font-black px-4 py-2.5 md:px-8 md:py-4 rounded-xl uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-red-100 transition-colors">Çıkış</button>
+                        <button onClick={handleLogout} className="flex-1 md:flex-none bg-red-50 text-red-600 font-black px-4 py-2.5 md:px-8 md:py-4 rounded-xl uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-red-100 transition-colors">Çıkış</button>
                     </div>
                 </div>
 
@@ -260,20 +277,6 @@ export const Profile = () => {
                 </div>
             </div>
 
-            {/* Profile/Store Gallery Display */}
-            {user.profileGallery && user.profileGallery.length > 0 && (
-                <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-xl border border-gray-100 p-8 md:p-12 mb-6 md:mb-12">
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-8 text-center md:text-left">MAĞAZA GÖRSELLERİ / GALERİ</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        {user.profileGallery.map((img, idx) => (
-                            <div key={idx} className="aspect-square rounded-[2rem] overflow-hidden shadow-sm border border-gray-50 hover:shadow-xl transition-all">
-                                <LazyImage src={img} alt={`Store View ${idx}`} className="w-full h-full object-cover" />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
             <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-xl border border-gray-100 overflow-hidden">
                 <div className="flex border-b border-gray-100 overflow-x-auto no-scrollbar bg-slate-50/30">
                     {['Aktif İşlemler', 'Geçmiş', 'Referanslar'].map((t, i) => (
@@ -284,18 +287,75 @@ export const Profile = () => {
                 <div className="p-4 md:p-10">
                     {activeTab === 'active' && (
                         <div className="space-y-12">
+                            {/* Listed Products (Inventory) */}
                             {activeInventory.length > 0 && (
                                 <div>
-                                    <div className="flex items-center gap-4 mb-6 px-2"><h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">İLANLARIM & ÜRÜNLERİM</h3><div className="h-[1px] flex-1 bg-gray-100"></div></div>
+                                    <div className="flex items-center gap-4 mb-6 px-2"><h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">İLANLARIM & ÜRÜNLERİM (SATICI)</h3><div className="h-[1px] flex-1 bg-gray-100"></div></div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
                                         {activeInventory.map((item: any) => (
                                             <div key={item.id} className="group bg-slate-50 rounded-[2.5rem] border border-slate-100 p-4 md:p-6 hover:shadow-2xl hover:bg-white transition-all">
-                                                <div className="relative aspect-square rounded-[2rem] overflow-hidden mb-4 bg-white border border-slate-100 shadow-inner"><LazyImage src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /><div className="absolute top-3 left-3 flex flex-col gap-1"><span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase shadow-lg border border-white/20 ${item.status === 'active' ? 'bg-emerald-500 text-white' : 'bg-orange-500 text-white'}`}>{item.status}</span></div></div>
+                                                <div className="relative aspect-square rounded-[2rem] overflow-hidden mb-4 bg-white border border-slate-100 shadow-inner">
+                                                    <LazyImage src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                                    <div className="absolute top-3 left-3 flex flex-col gap-1">
+                                                        <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase shadow-lg border border-white/20 ${item.status === 'active' ? 'bg-emerald-500 text-white' : 'bg-orange-500 text-white'}`}>{item.status}</span>
+                                                    </div>
+                                                </div>
                                                 <h4 className="font-black text-sm text-gray-900 uppercase italic truncate mb-1 leading-none">{item.title}</h4>
                                                 <p className="text-[11px] font-black text-primary mb-4 tracking-tighter">{formatPrice(item.startPrice)}</p>
                                                 <button onClick={() => setEditingItem(item)} className="w-full py-3 bg-white border border-gray-200 text-gray-600 font-black text-[10px] uppercase rounded-xl hover:bg-indigo-900 hover:text-white hover:border-indigo-900 transition-all shadow-sm">İlanı Yönet / Düzenle</button>
                                             </div>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Bids Made (Active Bids) */}
+                            {activeBids.length > 0 && (
+                                <div>
+                                    <div className="flex items-center gap-4 mb-6 px-2"><h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">KATILDIĞIM MEZATLAR (ALICI)</h3><div className="h-[1px] flex-1 bg-gray-100"></div></div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
+                                        {activeBids.map((bid: BuyerBid) => {
+                                            const actualAuction = auctions.find(a => a.id === bid.auctionId);
+                                            const isOutbid = actualAuction ? actualAuction.currentBid > bid.myBid : bid.status === 'outbid';
+                                            
+                                            return (
+                                                <Link key={bid.id} to={`/auction/${bid.auctionId}`} className="group bg-slate-50 rounded-[2.5rem] border border-slate-100 p-4 md:p-6 hover:shadow-2xl hover:bg-white transition-all">
+                                                    <div className="relative aspect-square rounded-[2rem] overflow-hidden mb-4 bg-white border border-slate-100 shadow-inner">
+                                                        <LazyImage src={bid.auctionImage} alt={bid.auctionTitle} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                                        <div className="absolute top-3 left-3 flex flex-col gap-1">
+                                                            <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase shadow-lg border border-white/20 ${isOutbid ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}>
+                                                                {isOutbid ? 'TEKLİFİN GEÇİLDİ' : 'LİDER TEKLİF'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <h4 className="font-black text-sm text-gray-900 uppercase italic truncate mb-1 leading-none">{bid.auctionTitle}</h4>
+                                                    <div className="flex justify-between items-center mt-2">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[8px] font-black text-gray-400 uppercase">SENİN TEKLİFİN</span>
+                                                            <span className="text-[11px] font-black text-gray-900">{formatPrice(bid.myBid)}</span>
+                                                        </div>
+                                                        <div className="flex flex-col text-right">
+                                                            <span className="text-[8px] font-black text-gray-400 uppercase">GÜNCEL DURUM</span>
+                                                            <span className={`text-[11px] font-black ${isOutbid ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                                {actualAuction ? formatPrice(actualAuction.currentBid) : '---'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-4 w-full py-3 bg-white border border-gray-200 text-indigo-900 font-black text-[10px] uppercase rounded-xl text-center group-hover:bg-indigo-900 group-hover:text-white group-hover:border-indigo-900 transition-all shadow-sm">Mezata Git</div>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeInventory.length === 0 && activeBids.length === 0 && (
+                                <div className="py-20 md:py-32 text-center text-gray-300">
+                                    <span className="text-5xl md:text-7xl block mb-6 opacity-20 grayscale">📂</span>
+                                    <p className="font-black uppercase tracking-widest text-xs italic">Aktif işleminiz bulunmuyor.</p>
+                                    <div className="mt-8 flex gap-4 justify-center">
+                                        <Link to="/sell" className="bg-primary text-white font-black px-8 py-3 rounded-xl text-[10px] uppercase shadow-lg">SATIŞ YAP</Link>
+                                        <Link to="/categories" className="bg-white border border-gray-200 text-gray-600 font-black px-8 py-3 rounded-xl text-[10px] uppercase shadow-sm">MEZATLARA GÖZ AT</Link>
                                     </div>
                                 </div>
                             )}
@@ -310,7 +370,6 @@ export const Profile = () => {
                                         <div className="flex-1 min-w-0 flex flex-col justify-center"><span className="bg-emerald-100 text-emerald-700 text-[8px] font-black px-2 py-0.5 rounded uppercase mb-2 inline-block self-start">İŞLEM BAŞLADI ✅</span><h4 className="font-display font-black text-lg md:text-2xl text-gray-900 uppercase italic truncate mb-2 leading-tight tracking-tighter">{(user.role as any) === 'seller' ? item.title : item.auctionTitle}</h4><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{new Date(item.timestamp || item.createdAt).toLocaleDateString()}</p></div>
                                     </div>
                                     <div className="space-y-6">
-                                        {/* Cast role explicitly to handle potential 'admin' value from user.role */}
                                         <TrustStepper item={item} role={user.role as 'buyer' | 'seller'} />
                                         <FeeBreakdown baseAmount={(user.role as any) === 'seller' ? (item.reservePrice || item.startPrice) : item.myBid} condition={item.condition} role={user.role as 'buyer' | 'seller'} isBoosted={item.isBoosted} />
                                     </div>

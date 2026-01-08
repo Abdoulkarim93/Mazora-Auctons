@@ -1,4 +1,3 @@
-
 import { AuctionItem, AuctionStatus, CategoryType, User, InventoryItem, ProductCondition, CATEGORIES, UserFeedback, GiftCodeClaim, SupportTicket, Dispute, BuyerRequest } from './types';
 
 const getProgrammedEndTime = (index: number) => {
@@ -144,8 +143,10 @@ export const MOCK_USERS: User[] = [
             isBoosted: true
         }
     ] },
-    { id: 'senegal-demo', name: 'Moussa Diop', role: 'buyer', email: 'senegal@mazora.com', password: '123', walletBalance: 500, frozenBalance: 0, joinedDate: new Date(), notifications: [], participationCount: 1, reputationScore: 100, participatedAuctionIds: [], timeSpentSeconds: 0, referralCode: 'SN-001', freeQuotesRemaining: 5, avatarUrl: 'https://ui-avatars.com/api/?name=Moussa+Diop&background=00853f&color=fff', inventory: [] },
-    { id: 'germany-demo', name: 'Hans Schmidt', role: 'buyer', email: 'germany@mazora.com', password: '123', walletBalance: 1200, frozenBalance: 0, joinedDate: new Date(), notifications: [], participationCount: 2, reputationScore: 95, participatedAuctionIds: [], timeSpentSeconds: 0, referralCode: 'DE-001', freeQuotesRemaining: 5, avatarUrl: 'https://ui-avatars.com/api/?name=Hans+Schmidt&background=ffcc00&color=000', inventory: [] }
+    { id: 'senegal-demo', name: 'Moussa Diop', role: 'buyer', email: 'senegal@mazora.com', password: '123', walletBalance: 500, frozenBalance: 0, joinedDate: new Date(), notifications: [], participationCount: 1, reputationScore: 100, participatedAuctionIds: [], timeSpentSeconds: 0, referralCode: 'SN-001', freeQuotesRemaining: 5, avatarUrl: 'https://ui-avatars.com/api/?name=Moussa+Diop&background=00853f&color=fff', countryCode: 'SN', preferredCurrency: 'XOF', inventory: [] },
+    { id: 'ghana-demo', name: 'Kofi Mensah', role: 'buyer', email: 'ghana@mazora.com', password: '123', walletBalance: 1200, frozenBalance: 0, joinedDate: new Date(), notifications: [], participationCount: 2, reputationScore: 95, participatedAuctionIds: [], timeSpentSeconds: 0, referralCode: 'GH-001', freeQuotesRemaining: 5, avatarUrl: 'https://ui-avatars.com/api/?name=Kofi+Mensah&background=fcd116&color=000', countryCode: 'GH', preferredCurrency: 'GHS', inventory: [] },
+    { id: 'germany-demo', name: 'Hans Müller', role: 'buyer', email: 'germany@mazora.com', password: '123', walletBalance: 200, frozenBalance: 0, joinedDate: new Date(), notifications: [], participationCount: 1, reputationScore: 99, participatedAuctionIds: [], timeSpentSeconds: 0, referralCode: 'DE-001', freeQuotesRemaining: 5, avatarUrl: 'https://ui-avatars.com/api/?name=Hans+Muller&background=000&color=ff0', countryCode: 'DE', preferredCurrency: 'EUR', inventory: [] },
+    { id: 'qatar-demo', name: 'Ahmed Al-Thani', role: 'buyer', email: 'qatar@mazora.com', password: '123', walletBalance: 5000, frozenBalance: 0, joinedDate: new Date(), notifications: [], participationCount: 3, reputationScore: 100, participatedAuctionIds: [], timeSpentSeconds: 0, referralCode: 'QA-001', freeQuotesRemaining: 5, avatarUrl: 'https://ui-avatars.com/api/?name=Ahmed+Al+Thani&background=8d1b3d&color=fff', countryCode: 'QA', preferredCurrency: 'QAR', inventory: [] }
 ];
 
 export const MOCK_AUCTIONS: AuctionItem[] = BOT_AUCTIONS;

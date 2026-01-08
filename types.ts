@@ -252,7 +252,6 @@ export interface User {
   password?: string;
   description?: string;
   avatarUrl?: string;
-  profileGallery?: string[];
   phoneNumber?: string;
   phone?: string;
   address?: string;
@@ -284,6 +283,7 @@ export interface User {
   watchlist?: string[];
   preferredCurrency?: string;
   countryCode?: string;
+  profileGallery?: string[];
 }
 
 export interface AuctionItem {
@@ -344,7 +344,7 @@ export const CATEGORIES = [
   { id: CategoryType.DIRECT_24H, label: { en: 'Direct 24h Bid', tr: '24H Direkt Mezat', fr: 'Enchère Directe 24h' }, icon: '⚡', subcategories: ['Smartphones', 'Consoles', 'TVs', 'Watches', 'Diğer'] },
   { id: CategoryType.MOTHER_CHILD, label: { en: 'Mother & Child', tr: 'Anne & Çocuk', fr: 'Mère & Enfant' }, icon: '👶', subcategories: ['Baby Gear', 'Feeding', 'Toys', 'Kids Clothing', 'Diğer'] },
   { id: CategoryType.ACCESSORIES_BAGS, label: { en: 'Accessories & Bags', tr: 'Aksesuar & Çanta', fr: 'Accessoires & Sacs' }, icon: '👜', subcategories: ['Wallets', 'Belts', 'Backpacks', 'Handbags', 'Diğer'] },
-  { id: CategoryType.COSMETICS, label: { en: 'Cosmetics', tr: 'Kozmetik', fr: 'Kozmetik' }, icon: '💄', subcategories: ['Skincare', 'Perfume', 'Makeup', 'Hair Care', 'Diğer'] },
+  { id: CategoryType.COSMETICS, label: { en: 'Cosmetics', tr: 'Kozmetik', fr: 'Cosmétique' }, icon: '💄', subcategories: ['Skincare', 'Perfume', 'Makeup', 'Hair Care', 'Diğer'] },
   { id: CategoryType.FOOTWEAR, label: { en: 'Footwear', tr: 'Ayakkabı', fr: 'Chaussures' }, icon: '👟', subcategories: ['Sneakers', 'Boots', 'Heels', 'Sandals', 'Diğer'] },
   { id: CategoryType.CONSUMABLES, label: { en: 'Consumables', tr: 'Sarf Malzemeleri & Gıda', fr: 'Consommables' }, icon: '🛒', subcategories: ['Groceries', 'Beverages', 'Cleaning Supplies', 'Personal Care', 'Diğer'] },
   { id: CategoryType.PETS, label: { en: 'Pets', tr: 'Evcil Hayvan', fr: 'Animaux' }, icon: '🐾', subcategories: ['Food', 'Accessories', 'Toys', 'Health', 'Diğer'] },

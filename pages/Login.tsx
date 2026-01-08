@@ -24,13 +24,10 @@ export const Login = () => {
     };
 
     const handleQuickDemo = (demoId: string) => {
-        // REQUIREMENT: Let user type the password. Pre-fill identifier only.
         setIdentifier(demoId);
         setPassword('');
-        // PROMPT COMPLIANCE: Do not display the '123' password explicitly in the toast
         showToast(`Demo ID: ${demoId} seçildi. Lütfen giriş yapın.`, "info");
         
-        // Focus the password field so they can start typing immediately
         if (passwordInputRef.current) {
             passwordInputRef.current.focus();
         }
@@ -99,10 +96,16 @@ export const Login = () => {
                                         <p className="text-[9px] text-indigo-700 font-black uppercase group-hover:scale-105 transition-transform">💼 SATICI (TR)</p>
                                     </button>
                                     <button onClick={() => handleQuickDemo('senegal@mazora.com')} className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 hover:bg-emerald-100 transition-all text-left group">
-                                        <p className="text-[9px] text-emerald-700 font-black uppercase group-hover:scale-105 transition-transform">🇸🇳 SENEGAL</p>
+                                        <p className="text-[9px] text-emerald-700 font-black uppercase group-hover:scale-105 transition-transform">🇸🇳 SENEGAL (XOF)</p>
                                     </button>
-                                    <button onClick={() => handleQuickDemo('germany@mazora.com')} className="bg-red-50 p-3 rounded-xl border border-red-100 hover:bg-red-100 transition-all text-left group">
-                                        <p className="text-[9px] text-red-700 font-black uppercase group-hover:scale-105 transition-transform">🇩🇪 ALMANYA</p>
+                                    <button onClick={() => handleQuickDemo('ghana@mazora.com')} className="bg-yellow-50 p-3 rounded-xl border border-yellow-200 hover:bg-yellow-100 transition-all text-left group">
+                                        <p className="text-[9px] text-yellow-700 font-black uppercase group-hover:scale-105 transition-transform">🇬🇭 GHANA (GHS)</p>
+                                    </button>
+                                    <button onClick={() => handleQuickDemo('germany@mazora.com')} className="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:bg-slate-100 transition-all text-left group">
+                                        <p className="text-[9px] text-slate-700 font-black uppercase group-hover:scale-105 transition-transform">🇩🇪 ALMANYA (EUR)</p>
+                                    </button>
+                                    <button onClick={() => handleQuickDemo('qatar@mazora.com')} className="bg-red-50 p-3 rounded-xl border border-red-100 hover:bg-red-100 transition-all text-left group">
+                                        <p className="text-[9px] text-red-700 font-black uppercase group-hover:scale-105 transition-transform">🇶🇦 QATAR (QAR)</p>
                                     </button>
                                 </div>
                             </div>
